@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Heineken Price Query</title>
+  <link rel="stylesheet" href="/stylesheets/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+  <!--Result-->
+  <h1>Query Heineken Price by Date</h1>
+
+  <form id="queryForm">
+    <label for="year">Year：</label>
+    <input type="number" id="year" name="year" min="2014" max="2024" required>
+    <label for="month">Month：</label>
+    <input type="number" id="month" name="month" min="1" max="12" required>
+    <button type="submit">Query</button>
+  </form>
+
+  <h4>Result：</h4>
+  <div id="result"></div>
+  <script>
+    document.getElementById('queryForm').onsubmit = async function(event) {
+      event.preventDefault();
+      const year = document.getElementById('year').value;
+      const month = document.getElementById('month').value;
+      const date = `${year}/${month}/1`; // 拼接成 YYYY/M/1 格式
+      const response = await fetch('/api/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ Date: date })
+      });
+      const result = await response.json();
+      const resultDiv = document.getElementById('result');
+      if (result.data.length > 0) {
+        resultDiv.innerHTML = `<pre>${JSON.stringify(result.data, null, 2)}</pre>`;
+      } else {
+        resultDiv.innerHTML = 'No data found for the specified date.';
+      }
+    };
+  </script>
+
+
+<!--  &lt;!&ndash;Insert&ndash;&gt;-->
+<!--  <h2>Insert Heineken Price Data</h2> &lt;!&ndash; 添加插入表单 &ndash;&gt;-->
+<!--  <form id="insertForm">-->
+<!--    <label for="insertDate">Date:</label>-->
+<!--    <input type="text" id="insertDate" name="date" required>-->
+<!--    <label for="insertOpen">Open:</label>-->
+<!--    <input type="number" id="insertOpen" name="open" step="any" required>-->
+<!--    <label for="insertHigh">High:</label>-->
+<!--    <input type="number" id="insertHigh" name="high" step="any">-->
+<!--    <label for="insertLow">Low:</label>-->
+<!--    <input type="number" id="insertLow" name="low" step="any">-->
+<!--    <label for="insertClose">Close:</label>-->
+<!--    <input type="number" id="insertClose" name="close" step="any">-->
+<!--    <label for="insertAdjClose">Adj Close:</label>-->
+<!--    <input type="number" id="insertAdjClose" name="adjClose" step="any">-->
+<!--    <label for="insertVolume">Volume:</label>-->
+<!--    <input type="number" id="insertVolume" name="volume">-->
+<!--    <label for="insertProduct">Product:</label>-->
+<!--    <input type="text" id="insertProduct" name="product">-->
+<!--    <button type="submit">Insert</button>-->
+<!--  </form>-->
+
+<!--  <h4>Insert Result：</h4>-->
+<!--  <div id="insertResult"></div>-->
+
+<!--  &lt;!&ndash;Delete&ndash;&gt;-->
+<!--  <h2>Delete Heineken Price Data</h2> &lt;!&ndash; 添加刪除表单 &ndash;&gt;-->
+<!--  <form id="deleteForm">-->
+<!--    <label for="deleteDate">Date:</label>-->
+<!--    <input type="text" id="deleteDate" name="date" required>-->
+<!--    <label for="deleteOpen">Open:</label>-->
+<!--    <input type="number" id="deleteOpen" name="open" step="any" required> &lt;!&ndash; 将type改为number，添加step属性 &ndash;&gt;-->
+<!--    <button type="submit">Delete</button>-->
+<!--  </form>-->
+
+<!--  <h4>Delete Result：</h4>-->
+<!--  <div id="deleteResult"></div>-->
+
+
+  <h2>Table NOW</h2>
+  <table id="priceTable">
+    <thead>
+    <tr>
+      <th>Date</th>
+      <th>Open</th>
+      <th>High</th>
+      <th>Low</th>
+      <th>Close</th>
+      <th>Adj_Close</th>
+      <th>Volume</th>
+      <th>Product</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function fetchData() {
+      const response = await fetch('/api/price');
+      const data = await response.json();
+      return data.prices;
+    }
+
+    function populateTable(data) {
+      const tableBody = document.querySelector('#priceTable tbody');
+      tableBody.innerHTML = '';
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        for (const key in row) {
+          const td = document.createElement('td');
+          td.textContent = row[key];
+          tr.appendChild(td);
+        }
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function renderChart(data) {
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      const labels = data.map(row => row.Date);
+      const openPrices = data.map(row => row.Open);
+
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Open Price',
+              data: openPrices,
+              borderColor: 'blue',
+              fill: false
+            }
+          ]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'month'
+              },
+              title: {
+                display: true,
+                text: 'Date'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Open Price'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    async function init() {
+      const data = await fetchData();
+      populateTable(data);
+      renderChart(data);
+    }
+
+    // <!--Insert-->
+    // async function insertData() {
+    //   const date = document.getElementById('insertDate').value;
+    //   const open = document.getElementById('insertOpen').value;
+    //   const high = document.getElementById('insertHigh').value;
+    //   const low = document.getElementById('insertLow').value;
+    //   const close = document.getElementById('insertClose').value;
+    //   const adjClose = document.getElementById('insertAdjClose').value;
+    //   const volume = document.getElementById('insertVolume').value;
+    //   const product = document.getElementById('insertProduct').value;
+    //
+    //   const response = await fetch('/api/insert', {
+    //     method: 'POST', // 修改為 POST 方法
+    //     headers: {
+    //       'Content-Type': 'application/json'
+    //     },
+    //     body: JSON.stringify({ date, open, high, low, close, adjClose, volume, product })
+    //   });
+    //   const result = await response.json();
+    //   const resultDiv = document.getElementById('insertResult');
+    //   if (result.error) {
+    //     resultDiv.textContent = result.error;
+    //   } else {
+    //     resultDiv.textContent = result.message;
+    //     init(); // Refresh the data after insertion
+    //   }
+    // }
+
+    // <!--Delete-->
+    // document.getElementById('deleteForm').onsubmit = async function(event) {
+    //   event.preventDefault();
+    //   const date = document.getElementById('deleteDate').value;
+    //   const open = document.getElementById('deleteOpen').value;
+    //   const response = await fetch(`/api/delete?Date=${date}&Open=${open}`, {
+    //     method: 'GET'
+    //   });
+    //   const result = await response.json();
+    //   const resultDiv = document.getElementById('deleteResult');
+    //   if (result.error) {
+    //     resultDiv.textContent = result.error;
+    //   } else {
+    //     resultDiv.textContent = result.message;
+    //     init(); // Refresh the data after deletion
+    //   }
+    // };
+
+    init();
+  </script>
+
+</body>
+</html>
